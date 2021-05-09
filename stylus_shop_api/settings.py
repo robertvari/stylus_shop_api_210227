@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig'
 ]
 
+AUTH_USER_MODEL = "users.StylusUser"
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
