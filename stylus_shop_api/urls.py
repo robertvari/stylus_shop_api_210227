@@ -3,6 +3,9 @@ from allauth.account.views import confirm_email
 from rest_auth.views import PasswordResetConfirmView
 from django.urls import path, include
 
+from django.conf import settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -16,3 +19,6 @@ urlpatterns = [
     path('api/shop/', include("shop.urls")),
     path('api/users/', include("users.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

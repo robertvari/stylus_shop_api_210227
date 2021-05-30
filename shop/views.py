@@ -4,45 +4,121 @@ from rest_framework.permissions import AllowAny
 from utilities.fake_database import get_database
 from rest_framework import status
 
+from .models import ShopItem, Category, SubCategory
+
 
 class ShopItemsView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, item_id=None):
-        item_list = get_database()["items"]
+    def get(self, request, slug=None):
+        item_list = ShopItem.objects.all()
 
-        if item_id:
-            result = [i for i in item_list if str(i["id"]) == item_id]
+        if slug:
+            result = ShopItem.objects.filter(slug=slug)
             if result:
-                return Response(result[0])
+                return Response(self._serialized(result)[0])
             return Response("Item not found", status.HTTP_404_NOT_FOUND)
 
-        return Response(item_list)
+        return Response(self._serialized(item_list))
+
+    def _serialized(self, items):
+        site_url = self.request.build_absolute_uri("/")[:-1]
+
+        return [
+            {
+                "id": i.id,
+                "category": i.category.title,
+                "subcategory": i.subcategory.title if i.subcategory else None,
+                "title": i.title,
+                "price": i.price,
+                "image": f"{site_url}{i.image1.url}",
+                "description": i.description,
+                "slug": i.slug
+            } for i in items
+        ]
 
 
 class CategoryView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response(get_database()["categories"])
+        categories = Category.objects.all()
+
+        def get_subcategories(item):
+            result = [i.title for i in item.subcategory.all()]
+            if result:
+                return result
+            return None
+
+        site_url = self.request.build_absolute_uri("/")[:-1]
+
+        result = []
+        for item in categories:
+            result.append({
+                "id": item.id,
+                "title": item.title,
+                "image": f"{site_url}{item.image.url}",
+                "items": get_subcategories(item)
+            })
+
+        return Response(result)
 
 
 class SliderView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response(get_database()["slider"])
+        items = ShopItem.objects.filter(featured=True)
+        site_url = self.request.build_absolute_uri("/")[:-1]
+
+        result = []
+        for i in items:
+            result.append({
+                "id": i.id,
+                "image": f"{site_url}{i.image1.url}",
+                "slug": i.slug
+            })
+
+        return Response(result)
 
 
 class AnalogCamerasView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response(get_database()["analog"])
+        items = ShopItem.objects.filter(subcategory__title="Analog")
+
+        site_url = self.request.build_absolute_uri("/")[:-1]
+
+        result = []
+        for i in items:
+            result.append({
+                "id": i.id,
+                "image": f"{site_url}{i.image1.url}",
+                "title": i.title,
+                "price": i.price,
+                "slug": i.slug
+            })
+
+        return Response(result)
 
 
 class FeaturedCamerasView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response(get_database()["featured"])
+        items = ShopItem.objects.filter(featured=True)
+
+        site_url = self.request.build_absolute_uri("/")[:-1]
+
+        result = []
+        for i in items:
+            result.append({
+                "id": i.id,
+                "image": f"{site_url}{i.image1.url}",
+                "title": i.title,
+                "price": i.price,
+                "slug": i.slug
+            })
+
+        return Response(result)
