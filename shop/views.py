@@ -1,10 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from utilities.fake_database import get_database
 from rest_framework import status
+from django.db import transaction
 
-from .models import ShopItem, Category, SubCategory
+
+from .models import ShopItem, Category, SubCategory, Order, OrderItems
+from users.models import StylusUser
 
 
 class ShopItemsView(APIView):
@@ -122,3 +124,59 @@ class FeaturedCamerasView(APIView):
             })
 
         return Response(result)
+
+
+class OrderView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        payment_id = request.data.get("payment_id")
+        amount = request.data.get("amount")
+
+        # todo send payment intent to Stripe
+
+        self._save_order()
+
+        return Response("Order view...")
+
+    def _save_order(self):
+        shopping_list = self.request.data.get("shopping_list")
+        customer = self.request.data.get("customer")
+
+        order_items = []
+
+        for item in shopping_list:
+            item_id = item["id"]
+            quantity = item["quantity"]
+
+            with transaction.atomic():
+                shop_item = ShopItem.objects.select_for_update().get(id=item_id)
+                shop_item.in_stock -= quantity
+                shop_item.save()
+
+            order_item = OrderItems.objects.create(
+                item=shop_item,
+                quantity=quantity
+            )
+
+            order_items.append(order_item)
+
+        user = None
+        if customer.get("id"):
+            user = StylusUser.objects.get(id=customer.get("id"))
+
+        order = Order.objects.create(
+            user=user,
+            email=customer.get("email"),
+            first_name=customer.get("first_name"),
+            last_name=customer.get("last_name"),
+            company=customer.get("company"),
+            address=customer.get("address"),
+            apartment=customer.get("apartment"),
+            city=customer.get("city"),
+            post_code=customer.get("post_code"),
+            phone=customer.get("phone")
+        )
+
+        order.items.set(order_items)
+        order.save()

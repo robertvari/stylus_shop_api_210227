@@ -55,6 +55,36 @@ class ShopItem(models.Model):
         return self.title
 
 
+class OrderItems(models.Model):
+    item = models.ForeignKey(ShopItem, on_delete=models.CASCADE, related_name="orders")
+    quantity = models.IntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.item.title}: {self.quantity}"
+
+
+class Order(models.Model):
+    user = models.ForeignKey(StylusUser, on_delete=models.CASCADE, related_name="orders", blank=True, null=True)
+    items = models.ManyToManyField(OrderItems)
+
+    # user data
+    email = models.EmailField(max_length=200)
+
+    first_name = models.CharField(max_length=200)
+    last_name = models.CharField(max_length=200)
+    company = models.CharField(max_length=200, blank=True)
+    address = models.CharField(max_length=200)
+    apartment = models.CharField(max_length=200, blank=True)
+    city = models.CharField(max_length=200)
+    post_code = models.CharField(max_length=200)
+    phone = models.CharField(max_length=200)
+
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.email} : {self.first_name} {self.last_name}"
+
+
 @receiver(pre_save, sender=ShopItem)
 def slug_generator(sender, instance, **kwargs):
     if not instance.slug:
