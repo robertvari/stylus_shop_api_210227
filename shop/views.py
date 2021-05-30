@@ -137,7 +137,11 @@ class OrderView(APIView):
 
         self._save_order()
 
-        return Response("Order view...")
+        payment_intend = {
+            "status": "succeeded"
+        }
+
+        return Response(payment_intend)
 
     def _save_order(self):
         shopping_list = self.request.data.get("shopping_list")
