@@ -162,8 +162,8 @@ class OrderView(APIView):
             order_items.append(order_item)
 
         user = None
-        if customer.get("id"):
-            user = StylusUser.objects.get(id=customer.get("id"))
+        if customer.get("user_id"):
+            user = StylusUser.objects.get(id=customer.get("user_id"))
 
         order = Order.objects.create(
             user=user,

@@ -12,6 +12,7 @@ class ProfileView(APIView):
         return Response({
             "email": user.email,
             "order_history": [],
+            "user_id": user.id,
             "profile": serializer.data
         })
 
