@@ -3,7 +3,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from django.db import transaction
+from django.conf import settings
 
+import stripe
+stripe.api_key = settings.STRIPE_API_KEY
 
 from .models import ShopItem, Category, SubCategory, Order, OrderItems
 from users.models import StylusUser
@@ -134,14 +137,18 @@ class OrderView(APIView):
         amount = request.data.get("amount")
 
         # todo send payment intent to Stripe
+        payment_intent = stripe.PaymentIntent.create(
+            amount=amount,
+            currency="huf",
+            payment_method=payment_id,
+            receipt_email=request.data.get("customer")["email"],
+            confirm=True
+        )
 
-        self._save_order()
+        if payment_intent.get("status") == "succeeded":
+            self._save_order()
 
-        payment_intend = {
-            "status": "succeeded"
-        }
-
-        return Response(payment_intend)
+        return Response(payment_intent)
 
     def _save_order(self):
         shopping_list = self.request.data.get("shopping_list")
